@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lab Terminal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      background: #000;
+    }
+    #terminal {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script>
+        const terminal = new Terminal();
+terminal.open(document.getElementById('terminal'));
+
+const wsHost = "ws://localhost:8080";
+const socket = new WebSocket(wsHost);
+socket.binaryType = "arraybuffer";
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+socket.onopen = () => {
+  terminal.write('\x1b[32mConnected to ttyd terminal\x1b[0m\r\n');
+
+            terminal.onData(data => {
+  try {
+    console.log("terminal input:", data);
+    socket.send(encoder.encode(data));
+  } catch (e) {
+    console.error("socket.send error:", e);
+  }
+});
+};
+
+socket.onmessage = (event) => {
+              console.log('Received from ttyd:', event.data);
+
+  if (typeof event.data === "string") {
+    terminal.write(event.data);
+  } else {
+    terminal.write(decoder.decode(event.data));
+  }
+};
+
+socket.onclose = () => {
+  terminal.write('\r\n\x1b[31mConnection closed\x1b[0m');
+};
+
+socket.onerror = (err) => {
+  terminal.write('\r\n\x1b[31mWebSocket error\x1b[0m');
+  console.error('WebSocket error:', err);
+};
+
+ </script>
+</body>
+</html>
+
